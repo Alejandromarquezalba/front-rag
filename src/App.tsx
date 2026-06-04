@@ -1,183 +1,249 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './App.css'
 
+interface Mensaje {
+  tipo: 'bot' | 'usuario';
+  texto: string;
+}
+
 function App() {
-  const [mensaje, setMensaje] = useState('');
-  const [respuesta, setRespuesta] = useState('');
+  const [input, setInput] = useState('');
+  const [mensajes, setMensajes] = useState<Mensaje[]>([
+    { tipo: 'bot', texto: 'Hola, soy el asistente virtual de Farmacia Ejemplo. ¿En qué puedo ayudarte hoy? Podés contarme tus síntomas o preguntarme por algún medicamento.' }
+  ]);
   const [cargando, setCargando] = useState(false);
   const [asistenteAbierto, setAsistenteAbierto] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
 
   const API_URL = 'https://back-rag-2tqi.onrender.com/chat';
 
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [mensajes]);
+
   const preguntar = async () => {
-    if (!mensaje.trim()) return;
+    if (!input.trim() || cargando) return;
+    const textoUsuario = input;
+    setInput('');
+    setMensajes(prev => [...prev, { tipo: 'usuario', texto: textoUsuario }]);
     setCargando(true);
-    setRespuesta('');
-    
+
     try {
-      const { data } = await axios.post(API_URL, { mensaje });
-      setRespuesta(data.respuesta || 'No se obtuvo respuesta');
-    } catch (error) {
-      console.error('Error:', error);
-      setRespuesta('Error al conectar. Render puede estar despertando (30-50s).');
+      const { data } = await axios.post(API_URL, { mensaje: textoUsuario });
+      setMensajes(prev => [...prev, { tipo: 'bot', texto: data.respuesta || 'No se obtuvo respuesta' }]);
+    } catch {
+      setMensajes(prev => [...prev, { tipo: 'bot', texto: 'Error al conectar. Render puede estar despertando (30-50s), intentá de nuevo.' }]);
     }
     setCargando(false);
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', fontFamily: 'Segoe UI, sans-serif' }}>
+
       {/* Header */}
       <header style={{
         backgroundColor: '#2c7a4d',
         color: 'white',
-        padding: '15px 20px',
+        padding: '15px 30px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
       }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>🏥 Farmacia ejemplo</h1>
-        <div>
-          <button 
-            type="button"
-            style={{ background: 'none', border: 'none', color: 'white', marginRight: '15px', cursor: 'pointer' }}
-          >
-            Login
-          </button>
-          <button 
-            type="button"
-            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
-          >
-            🛒 Carrito
-          </button>
+        <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>🏥 Farmacia Ejemplo</h1>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <button type="button" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.95rem' }}>Inicio</button>
+          <button type="button" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.95rem' }}>Productos</button>
+          <button type="button" style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.95rem' }}>Login</button>
+          <button type="button" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', fontSize: '0.95rem', padding: '6px 14px', borderRadius: '20px' }}>🛒 Carrito</button>
         </div>
       </header>
 
-      {/* Hero banner (placeholder) */}
+      {/* Hero banner */}
       <div style={{
-        backgroundColor: '#e8f5e9',
+        background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
         textAlign: 'center',
-        padding: '40px 20px',
-        margin: '20px',
-        borderRadius: '10px'
+        padding: '50px 20px',
+        margin: '25px',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
       }}>
-        <h2>💊 20% OFF en medicamentos de venta libre</h2>
-        <p>Válido hasta el 30 de junio</p>
+        <h2 style={{ color: '#2c7a4d', fontSize: '1.8rem', marginBottom: '10px' }}>💊 20% OFF en medicamentos de venta libre</h2>
+        <p style={{ color: '#555', margin: 0 }}>Válido hasta el 30 de junio · Consultá con nuestro asistente virtual</p>
       </div>
 
-      {/* Product grid (placeholder, no funcional) */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-        <h3>Productos destacados</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+      {/* Product grid */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 25px' }}>
+        <h3 style={{ color: '#333', marginBottom: '20px' }}>Productos destacados</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '18px' }}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-            <div key={i} style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-              <div style={{ fontSize: '48px' }}>💊</div>
-              <h4>Producto {i}</h4>
-              <p style={{ color: '#888' }}>$ 2.500</p>
-              <button style={{ backgroundColor: '#2c7a4d', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Ver más</button>
+            <div key={i} style={{
+              backgroundColor: 'white',
+              padding: '18px',
+              borderRadius: '10px',
+              textAlign: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s',
+              cursor: 'pointer'
+            }}>
+              <div style={{ fontSize: '40px', marginBottom: '8px' }}>💊</div>
+              <h4 style={{ margin: '0 0 6px', fontSize: '0.95rem', color: '#333' }}>Producto {i}</h4>
+              <p style={{ color: '#888', margin: '0 0 12px', fontSize: '0.9rem' }}>$ 2.500</p>
+              <button style={{
+                backgroundColor: '#2c7a4d',
+                color: 'white',
+                border: 'none',
+                padding: '7px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.85rem'
+              }}>Ver más</button>
             </div>
           ))}
         </div>
-        <p style={{ textAlign: 'center', marginTop: '20px', color: '#888' }}>⬆️ Estos productos son de ejemplo (no funcional) ⬆️</p>
+        <p style={{ textAlign: 'center', marginTop: '20px', color: '#aaa', fontSize: '0.85rem' }}>
+          ⬆️ Productos de ejemplo — no funcionales
+        </p>
       </div>
 
-      {/* Botón flotante del asistente */}
+      {/* Botón flotante */}
       {!asistenteAbierto && (
         <button
           onClick={() => setAsistenteAbierto(true)}
           style={{
             position: 'fixed',
-            bottom: '20px',
-            right: '420px',
+            bottom: '24px',
+            right: '24px',
             backgroundColor: '#2c7a4d',
             color: 'white',
             border: 'none',
             borderRadius: '50px',
-            padding: '12px 20px',
+            padding: '14px 22px',
             cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-            fontSize: '16px'
+            boxShadow: '0 4px 15px rgba(44,122,77,0.4)',
+            fontSize: '15px',
+            fontWeight: 600
           }}
         >
-          💬 ¿No encuentras algo en específico?. ¿Necesitas ayuda?
+          💬 ¿Necesitás ayuda?
         </button>
       )}
 
-      {/* Ventana emergente del asistente */}
+      {/* Ventana del asistente */}
       {asistenteAbierto && (
         <div style={{
           position: 'fixed',
-          bottom: '20px',
-          right: '420px',
-          width: '350px',
+          bottom: '24px',
+          right: '24px',
+          width: '360px',
           backgroundColor: 'white',
-          borderRadius: '10px',
-          boxShadow: '0 5px 20px rgba(0,0,0,0.3)',
+          borderRadius: '14px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
           overflow: 'hidden',
-          zIndex: 1000
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '500px'
         }}>
-          {/* Header del asistente */}
+
+          {/* Header del chat */}
           <div style={{
             backgroundColor: '#2c7a4d',
             color: 'white',
-            padding: '12px 15px',
+            padding: '14px 16px',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexShrink: 0
           }}>
-            <span>🧠 Asistente IA Virtual</span>
-            <button
-              onClick={() => setAsistenteAbierto(false)}
-              style={{ background: 'none', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer'}}
-            >
-              ✕
-            </button>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>🤖 Asistente Farma</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Powered by IA · En línea</div>
+            </div>
+            <button onClick={() => setAsistenteAbierto(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
           </div>
 
-          {/* Cuerpo del chat */}
-          <div style={{ padding: '15px' }}>
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ backgroundColor: '#e8f5e9', padding: '10px', borderRadius: '10px', marginBottom: '10px' }}>
-                🤖 Hola, soy la IA asistente de Farmacia ejemplo. ¿Buscas algo en específico?. ¿Qué sintomas tienes?.
-              </div>
-              
-              {respuesta && (
-                <div style={{ backgroundColor: '#e8f5e9', padding: '10px', borderRadius: '10px', marginTop: '10px' }}>
-                  🤖 {respuesta}
+          {/* Mensajes */}
+          <div
+            ref={chatRef}
+            style={{
+              padding: '14px',
+              overflowY: 'auto',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}
+          >
+            {mensajes.map((m, i) => (
+              <div key={i} style={{
+                display: 'flex',
+                justifyContent: m.tipo === 'usuario' ? 'flex-end' : 'flex-start'
+              }}>
+                <div style={{
+                  backgroundColor: m.tipo === 'usuario' ? '#2c7a4d' : '#f0f7f2',
+                  color: m.tipo === 'usuario' ? 'white' : '#333',
+                  padding: '9px 13px',
+                  borderRadius: m.tipo === 'usuario' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                  maxWidth: '85%',
+                  fontSize: '0.83rem',
+                  lineHeight: '1.5'
+                }}>
+                  {m.texto}
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
+            {cargando && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{ backgroundColor: '#f0f7f2', padding: '9px 13px', borderRadius: '14px 14px 14px 4px', fontSize: '0.83rem', color: '#888' }}>
+                  Escribiendo...
+                </div>
+              </div>
+            )}
+          </div>
 
-            {/* Input del usuario */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                value={mensaje}
-                onChange={(e) => setMensaje(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && preguntar()}
-                placeholder="Ej: ¿Tienen paracetamol?"
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '5px',
-                  border: '1px solid #ccc'
-                }}
-              />
-              <button
-                onClick={preguntar}
-                disabled={cargando}
-                style={{
-                  padding: '10px 15px',
-                  backgroundColor: '#2c7a4d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
-              >
-                {cargando ? '...' : 'Enviar'}
-              </button>
-            </div>
+          {/* Input */}
+          <div style={{
+            padding: '12px',
+            borderTop: '1px solid #eee',
+            display: 'flex',
+            gap: '8px',
+            flexShrink: 0
+          }}>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && preguntar()}
+              placeholder="Ej: me duele la cabeza..."
+              style={{
+                flex: 1,
+                padding: '9px 13px',
+                borderRadius: '20px',
+                border: '1px solid #ddd',
+                fontSize: '0.85rem',
+                outline: 'none'
+              }}
+            />
+            <button
+              onClick={preguntar}
+              disabled={cargando}
+              style={{
+                padding: '9px 16px',
+                backgroundColor: cargando ? '#aaa' : '#2c7a4d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '20px',
+                cursor: cargando ? 'not-allowed' : 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 600
+              }}
+            >
+              {cargando ? '...' : 'Enviar'}
+            </button>
           </div>
         </div>
       )}
